@@ -1,0 +1,10 @@
+build_x86
+.vscode
+
+HelloWorld.hpp
+HelloWorldCdrAux.hpp
+HelloWorldCdrAux.ipp
+HelloWorldPubSubTypes.cxx
+HelloWorldPubSubTypes.hpp
+HelloWorldTypeObjectSupport.cxx
+HelloWorldTypeObjectSupport.hpp
