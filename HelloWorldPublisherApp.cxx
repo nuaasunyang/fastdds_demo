@@ -32,13 +32,16 @@
 #include <fastdds/dds/publisher/Publisher.hpp>
 #include <fastdds/dds/publisher/qos/DataWriterQos.hpp>
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
+#include <fastdds/rtps/transport/TCPv4TransportDescriptor.hpp>
+#include <fastdds/rtps/common/Locator.hpp>  // 添加Locator头文件
 
 #include "HelloWorldPubSubTypes.hpp"
 
 using namespace eprosima::fastdds::dds;
+using namespace eprosima::fastdds::rtps;  // 添加rtps命名空间
 
 HelloWorldPublisherApp::HelloWorldPublisherApp(
-        const int& domain_id)
+        const int& domain_id, int transportType)
     : factory_(nullptr)
     , participant_(nullptr)
     , publisher_(nullptr)
@@ -49,11 +52,47 @@ HelloWorldPublisherApp::HelloWorldPublisherApp(
     , samples_sent_(0)
     , stop_(false)
 {
-    //
-
     // Create the participant
     DomainParticipantQos pqos = PARTICIPANT_QOS_DEFAULT;
     pqos.name("HelloWorld_pub_participant");
+
+    if(transportType == 0)
+    {
+        // default
+    }
+    else if(transportType == 1)
+    {
+        // 配置TCP传输
+        auto tcp_transport = std::make_shared<TCPv4TransportDescriptor>();
+        tcp_transport->add_listener_port(5100);  // 客户端自己的监听端口
+        tcp_transport->keep_alive_frequency_ms = 5000;
+        tcp_transport->keep_alive_timeout_ms = 15000;
+        tcp_transport->max_logical_port = 65535;
+        tcp_transport->non_blocking_send = true;
+
+        // 清除默认的UDP传输，添加TCP传输
+        pqos.transport().use_builtin_transports = false;
+        pqos.transport().user_transports.push_back(tcp_transport);
+
+        // ✅ 配置为 CLIENT 模式
+        pqos.wire_protocol().builtin.discovery_config.discoveryProtocol = DiscoveryProtocol::CLIENT;
+
+        // ✅ 【关键】使用 m_DiscoveryServers 指定要连接的服务器地址
+        Locator_t server_locator;
+        server_locator.kind = LOCATOR_KIND_TCPv4;
+        // 设置服务器的 IP 地址和端口（与订阅者配置一致）
+        IPLocator::setIPv4(server_locator, "127.0.0.1");  // 同一台机器用 127.0.0.1
+        server_locator.port = 5200;  // 服务器的物理端口
+        pqos.wire_protocol().builtin.discovery_config.m_DiscoveryServers.push_back(server_locator);
+
+        // 设置 leaseDuration
+        pqos.wire_protocol().builtin.discovery_config.leaseDuration = c_TimeInfinite;
+    }
+    else
+    {
+
+    }
+
     factory_ = DomainParticipantFactory::get_shared_instance();
     participant_ = factory_->create_participant(domain_id, pqos, nullptr, StatusMask::none());
     if (participant_ == nullptr)

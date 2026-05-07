@@ -24,6 +24,9 @@
 #include "HelloWorldPublisherApp.hpp"
 #include "HelloWorldSubscriberApp.hpp"
 
+// 0: udp, 1: tcp, 2: shm
+static int transportType = 1;
+
 //! Factory method to create a publisher or subscriber
 std::shared_ptr<HelloWorldApplication> HelloWorldApplication::make_app(
         const int& domain_id,
@@ -32,11 +35,11 @@ std::shared_ptr<HelloWorldApplication> HelloWorldApplication::make_app(
     std::shared_ptr<HelloWorldApplication> entity;
     if (strcmp(entity_kind.c_str(), "publisher") == 0)
     {
-        entity = std::make_shared<HelloWorldPublisherApp>(domain_id);
+        entity = std::make_shared<HelloWorldPublisherApp>(domain_id, transportType);
     }
     else if (strcmp(entity_kind.c_str(), "subscriber") == 0)
     {
-        entity = std::make_shared<HelloWorldSubscriberApp>(domain_id);
+        entity = std::make_shared<HelloWorldSubscriberApp>(domain_id, transportType);
     }
     else
     {

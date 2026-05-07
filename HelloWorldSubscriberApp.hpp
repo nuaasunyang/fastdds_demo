@@ -38,7 +38,7 @@ class HelloWorldSubscriberApp : public HelloWorldApplication,
 public:
 
     HelloWorldSubscriberApp(
-            const int& domain_id);
+            const int& domain_id, int transportType);
 
     virtual ~HelloWorldSubscriberApp();
 

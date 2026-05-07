@@ -37,7 +37,7 @@ class HelloWorldPublisherApp : public HelloWorldApplication,
 public:
 
     HelloWorldPublisherApp(
-            const int& domain_id);
+            const int& domain_id, int transportType);
 
     ~HelloWorldPublisherApp();
 

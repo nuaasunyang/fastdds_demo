@@ -31,13 +31,17 @@
 #include <fastdds/dds/subscriber/qos/SubscriberQos.hpp>
 #include <fastdds/dds/subscriber/SampleInfo.hpp>
 #include <fastdds/dds/subscriber/Subscriber.hpp>
+#include <fastdds/rtps/transport/TCPv4TransportDescriptor.hpp>
+#include <fastdds/rtps/common/Locator.hpp>
+#include <fastdds/rtps/common/LocatorList.hpp>  // 添加LocatorList头文件
 
 #include "HelloWorldPubSubTypes.hpp"
 
 using namespace eprosima::fastdds::dds;
+using namespace eprosima::fastdds::rtps;
 
 HelloWorldSubscriberApp::HelloWorldSubscriberApp(
-        const int& domain_id)
+        const int& domain_id, int transportType)
     : factory_(nullptr)
     , participant_(nullptr)
     , subscriber_(nullptr)
@@ -50,6 +54,44 @@ HelloWorldSubscriberApp::HelloWorldSubscriberApp(
     // Create the participant
     DomainParticipantQos pqos = PARTICIPANT_QOS_DEFAULT;
     pqos.name("HelloWorld_sub_participant");
+
+    if(transportType == 0)
+    {
+        // default
+    }
+    else if(transportType == 1)
+    {
+        // 配置TCP传输
+        auto tcp_transport = std::make_shared<TCPv4TransportDescriptor>();
+        tcp_transport->add_listener_port(5200);  // 监听端口
+        tcp_transport->keep_alive_frequency_ms = 5000;
+        tcp_transport->keep_alive_timeout_ms = 15000;
+        tcp_transport->max_logical_port = 65535;
+        tcp_transport->non_blocking_send = true;
+
+        // 清除默认的UDP传输，添加TCP传输
+        pqos.transport().use_builtin_transports = false;
+        pqos.transport().user_transports.push_back(tcp_transport);
+
+        // ✅ 配置为 SERVER 模式
+        pqos.wire_protocol().builtin.discovery_config.discoveryProtocol = DiscoveryProtocol::SERVER;
+
+        // ✅ 【关键修改】使用 metatrafficUnicastLocatorList 设置服务器的监听地址（不是 m_DiscoveryServer_listen_locators）
+        Locator_t server_listen_locator;
+        server_listen_locator.kind = LOCATOR_KIND_TCPv4;
+        // 监听所有网络接口，使用通配地址 "0.0.0.0"
+        IPLocator::setIPv4(server_listen_locator, "0.0.0.0");
+        server_listen_locator.port = 5200;  // 服务器的物理端口
+        pqos.wire_protocol().builtin.metatrafficUnicastLocatorList.push_back(server_listen_locator);
+
+        // 设置 leaseDuration
+        pqos.wire_protocol().builtin.discovery_config.leaseDuration = c_TimeInfinite;
+    }
+    else
+    {
+
+    }
+
     factory_ = DomainParticipantFactory::get_shared_instance();
     participant_ = factory_->create_participant(domain_id, pqos, nullptr, StatusMask::none());
     if (participant_ == nullptr)
