@@ -25,7 +25,7 @@
 #include "HelloWorldSubscriberApp.hpp"
 
 // 0: udp, 1: tcp, 2: shm
-static int transportType = 1;
+static int transportType = 2;
 
 //! Factory method to create a publisher or subscriber
 std::shared_ptr<HelloWorldApplication> HelloWorldApplication::make_app(

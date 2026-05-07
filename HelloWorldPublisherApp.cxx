@@ -33,6 +33,7 @@
 #include <fastdds/dds/publisher/qos/DataWriterQos.hpp>
 #include <fastdds/dds/publisher/qos/PublisherQos.hpp>
 #include <fastdds/rtps/transport/TCPv4TransportDescriptor.hpp>
+#include <fastdds/rtps/transport/shared_mem/SharedMemTransportDescriptor.hpp>  // 添加SHM头文件
 #include <fastdds/rtps/common/Locator.hpp>  // 添加Locator头文件
 
 #include "HelloWorldPubSubTypes.hpp"
@@ -90,7 +91,21 @@ HelloWorldPublisherApp::HelloWorldPublisherApp(
     }
     else
     {
-
+        // ✅ 配置 SHM (共享内存) 传输
+        auto shm_transport = std::make_shared<SharedMemTransportDescriptor>();
+        
+        // 设置共享内存段名称前缀（可选）
+        shm_transport->segment_size(1024 * 1024 * 8);  // 共享内存段大小：8MB
+        shm_transport->port_queue_capacity(128);       // 端口队列容量
+        shm_transport->healthy_check_timeout_ms(1000); // 健康检查超时时间
+        shm_transport->rtps_dump_file("");             // RTPS转储文件（空表示不转储）
+        
+        // 清除默认的UDP传输，添加SHM传输
+        pqos.transport().use_builtin_transports = false;
+        pqos.transport().user_transports.push_back(shm_transport);
+        
+        // SHM传输使用默认的SIMPLE发现协议，无需特殊配置
+        // 注意：SHM传输只能在同一台机器上的进程间通信
     }
 
     factory_ = DomainParticipantFactory::get_shared_instance();
